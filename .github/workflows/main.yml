@@ -1,0 +1,78 @@
+name: ZOYA APK Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      # Increase Gradle memory
+      - name: Configure Gradle memory
+        run: |
+          cat >> gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8
+          org.gradle.daemon=false
+          org.gradle.parallel=true
+          EOF
+
+      # Generate debug keystore
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore debug.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      # Show important build files
+      - name: Check project
+        run: |
+          echo "=== Project ==="
+          ls -lah
+          echo "=== App ==="
+          ls -lah app
+          echo "=== Gradle memory ==="
+          grep -n "org.gradle.jvmargs" gradle.properties || true
+
+      # Build APK
+      - name: Build Debug APK
+        env:
+          GRADLE_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=512m"
+        run: |
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            --max-workers=2
+
+      # Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZOYA-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
