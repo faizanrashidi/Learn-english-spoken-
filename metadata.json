@@ -1,0 +1,6 @@
+{
+  "name": "Bol English AI",
+  "description": "AI Spoken English Teacher from Hindi Medium (Level 0 to 100) with Voice Practice, Grammar & Real-time AI Correction.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
